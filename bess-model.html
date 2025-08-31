@@ -423,9 +423,30 @@
         .pdf-option input[type="checkbox"] {
             margin-right: 8px;
         }
+
+        .back-to-panel-btn{
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 9999;
+            font-size: 600;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+
+        .back-to-panel-btn:hover {
+            transform: 0 5px rgba(102, 126, 234, 0.3);
+        }
     </style>
 </head>
 <body>
+    <button class="back-to-panel-btn" onclick="backToPanel()">← Powrót do panelu</button>
     <!-- Login Screen -->
     <div class="login-container" id="loginContainer">
         <h1>🔋 Model Finansowy BESS</h1>
@@ -1317,6 +1338,15 @@
         function previewPDF() {
             alert('Podgląd PDF zostanie otwarty w nowej karcie');
             generatePDF();
+        }
+
+        // Funkcja powrotu do panelu głównego
+        function backToPanel() {
+            if (sessionStorage.getItem('energy_models_auth') === 'true'){
+                window.location.href = 'index.html';    
+            } else {
+                window.location.href = 'index.html';
+            }
         }
     </script>
 </body>

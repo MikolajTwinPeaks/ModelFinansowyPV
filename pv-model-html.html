@@ -277,9 +277,34 @@
             font-weight: bold;
             color: #667eea;
         }
+
+        /* Przycisk powrotu do panelu */
+        .back-to-panel-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 9999;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;   
+        }
+
+        .back-to-panel-btn:hover {
+            transform: translate(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
     </style>
 </head>
 <body>
+    <button class="back-to-panel-btn" onclick="backToPanel()">← Powrót do panelu</button>
     <div class="container">
         <div class="header">
             <h1>☀️ Model Finansowy Farmy Fotowoltaicznej 1 MW</h1>
@@ -890,6 +915,15 @@
         window.onload = function() {
             updateCalculations();
         };
+
+        // Funkcja powrotu do panelu głównego
+        function backToPanel() {
+            if (sessionStorage.getItem('energy_models_auth') === 'true'){
+                window.location.href = 'index.html';
+            } else {
+                window.location.href = 'index.html'
+            }
+        }
     </script>
 </body>
 </html>
