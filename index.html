@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twin Peaks - Modele Finansowe Energetyki</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        /* Login Container */
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .login-form {
+            margin-top: 30px;
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .error-message {
+            color: #f44336;
+            margin-top: 15px;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .hint {
+            color: #999;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+        
+        /* Dashboard Container */
+        .dashboard-container {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .dashboard {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .dashboard-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-header p {
+            color: #666;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+        
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .model-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .model-card.pv {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        }
+        
+        .model-card.bess {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .model-card.hybrid {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .model-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .model-title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .model-description {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+        
+        .model-features {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-item {
+            color: white;
+            font-size: 12px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .feature-icon {
+            margin-right: 5px;
+        }
+        
+        .model-btn {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .model-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+        
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .badge.new {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .tools-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .tools-title {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .tool-card {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .tool-card:hover {
+            background: #eeeeee;
+            transform: translateY(-2px);
+        }
+        
+        .tool-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .tool-name {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .tool-desc {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .stats-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .models-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logout-btn {
+                position: static;
+                margin-top: 20px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <div class="logo">⚡</div>
+        <h1>Twin Peaks Energy</h1>
+        <p class="subtitle">Modele Finansowe Energetyki</p>
+        
+        <div class="login-form">
+            <div class="input-group">
+                <span class="input-icon">🔐</span>
+                <input type="password" 
+                       id="passwordInput" 
+                       placeholder="Wprowadź hasło dostępu"
+                       onkeypress="if(event.key==='Enter') login()">
+            </div>
+            <button class="login-btn" onclick="login()">Zaloguj się</button>
+            <div class="error-message" id="errorMessage">❌ Nieprawidłowe hasło</div>
+            <p class="hint">💡 Wskazówka: Hasło domyślne to 'admin'</p>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard-container" id="dashboardContainer">
+        <div class="dashboard">
+            <div class="dashboard-header">
+                <h1>🏢 Panel Modeli Finansowych</h1>
+                <p>Wybierz model do analizy finansowej</p>
+                <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
+            </div>
+            
+            <div class="models-grid">
+                <!-- Model PV -->
+                <div class="model-card pv">
+                    <div class="model-icon">☀️</div>
+                    <h2 class="model-title">Model PV</h2>
+                    <p class="model-description">
+                        Analiza finansowa farmy fotowoltaicznej 1MW
+                    </p>
+                    <div class="model-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✅</span> NPV, IRR, WACC
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📊</span> 30-letnia projekcja
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📈</span> Analiza wrażliwości
+                        </div>
+                    </div>
+                    <button class="model-btn" onclick="openModel('pv-model-html.html')">
+                        Otwórz Model PV
+                    </button>
+                </div>
+                
+                <!-- Model BESS -->
+                <div class="model-card bess">
+                    <div class="model-icon">🔋</div>
+                    <h2 class="model-title">Model BESS</h2>
+                    <p class="model-description">
+                        System magazynowania energii z arbitrażem
+                    </p>
+                    <div class="model-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">⚡</span> Sprawność 85%
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📄</span> Eksport PDF
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">💰</span> Arbitraż cenowy
+                        </div>
+                    </div>
+                    <button class="model-btn" onclick="openModel('bess-model.html')">
+                        Otwórz Model BESS
+                    </button>
+                </div>
+                
+                <!-- Model Hybrydowy -->
+                <div class="model-card hybrid">
+                    <span class="badge new">NOWY</span>
+                    <div class="model-icon">⚡</div>
+                    <h2 class="model-title">Model Hybrydowy</h2>
+                    <p class="model-description">
+                        Synergia PV + BESS z optymalizacją przepływów
+                    </p>
+                    <div class="model-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">🔄</span> Efekt synergii
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🎯</span> Porównanie 3 scenariuszy
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">💡</span> Darmowa energia PV→BESS
+                        </div>
+                    </div>
+                    <button class="model-btn" onclick="openModel('hybrid-model.html')">
+                        Otwórz Model Hybrydowy
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Narzędzia -->
+            <div class="tools-section">
+                <h3 class="tools-title">🛠️ Narzędzia Pomocnicze</h3>
+                <div class="tools-grid">
+                    <div class="tool-card" onclick="openModel('password-generator.html')">
+                        <div class="tool-icon">🔐</div>
+                        <div class="tool-name">Generator Haseł</div>
+                        <div class="tool-desc">Tworzenie hashy SHA256</div>
+                    </div>
+                    <div class="tool-card" onclick="window.open('https://github.com/MikolajTwinPeaks/ModelFinansowyPV', '_blank')">
+                        <div class="tool-icon">📚</div>
+                        <div class="tool-name">GitHub</div>
+                        <div class="tool-desc">Kod źródłowy</div>
+                    </div>
+                    <div class="tool-card" onclick="showInfo()">
+                        <div class="tool-icon">📖</div>
+                        <div class="tool-name">Dokumentacja</div>
+                        <div class="tool-desc">Instrukcje użytkowania</div>
+                    </div>
+                    <div class="tool-card" onclick="exportData()">
+                        <div class="tool-icon">💾</div>
+                        <div class="tool-name">Eksport</div>
+                        <div class="tool-desc">Zapisz ustawienia</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statystyki -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Modele dostępne</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">30</div>
+                    <div class="stat-label">Lat projekcji</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">85%</div>
+                    <div class="stat-label">Sprawność BESS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">1MW</div>
+                    <div class="stat-label">Moc instalacji</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfiguracja
+        const ADMIN_PASSWORD_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // SHA256 dla 'admin'
+        
+        // Funkcje logowania
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+        
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            const hashedPassword = hashPassword(password);
+            
+            if (hashedPassword === ADMIN_PASSWORD_HASH) {
+                // Zapisz sesję globalną
+                sessionStorage.setItem('energy_models_auth', 'true');
+                sessionStorage.setItem('auth_timestamp', Date.now());
+                
+                // Pokaż dashboard
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('dashboardContainer').style.display = 'block';
+                
+                // Zapisz informację o zalogowaniu
+                console.log('Zalogowano:', new Date().toLocaleString());
+            } else {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                
+                // Ukryj błąd po 3 sekundach
+                setTimeout(() => {
+                    document.getElementById('errorMessage').style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        function logout() {
+            // Wyczyść wszystkie sesje
+            sessionStorage.clear();
+            location.reload();
+        }
+        
+        function openModel(modelUrl) {
+            // Sprawdź czy użytkownik jest zalogowany
+            if (sessionStorage.getItem('energy_models_auth') !== 'true') {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                location.reload();
+                return;
+            }
+            
+            // Otwórz model w tym samym oknie
+            window.location.href = modelUrl;
+        }
+        
+        function showInfo() {
+            alert(`
+📖 DOKUMENTACJA MODELI FINANSOWYCH
+
+1. MODEL PV (Fotowoltaika)
+   - Analiza farmy słonecznej 1MW
+   - Degradacja: 0.5%/rok
+   - Amortyzacja: 25 lat
+
+2. MODEL BESS (Magazyn Energii)
+   - System 1MW/2MWh
+   - Sprawność: 85%
+   - Amortyzacja: 15 lat
+
+3. MODEL HYBRYDOWY (PV+BESS)
+   - Synergia obu technologii
+   - 1 cykl BESS z darmowej energii PV
+   - Obliczanie efektu synergii
+
+WSPARCIE:
+📧 mikolaj@twinpeaks.pl
+🌐 github.com/MikolajTwinPeaks
+            `);
+        }
+        
+        function exportData() {
+            const exportInfo = {
+                timestamp: new Date().toISOString(),
+                models: ['PV', 'BESS', 'Hybrid'],
+                user: 'Administrator',
+                session: sessionStorage.getItem('auth_timestamp')
+            };
+            
+            const dataStr = JSON.stringify(exportInfo, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `energy_models_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        
+        // Sprawdź sesję przy załadowaniu
+        window.onload = function() {
+            // Sprawdź czy użytkownik był już zalogowany
+            if (sessionStorage.getItem('energy_models_auth') === 'true') {
+                // Sprawdź czy sesja nie wygasła (24h)
+                const authTime = parseInt(sessionStorage.getItem('auth_timestamp'));
+                const now = Date.now();
+                const hoursPassed = (now - authTime) / (1000 * 60 * 60);
+                
+                if (hoursPassed < 24) {
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboardContainer').style.display = 'block';
+                } else {
+                    sessionStorage.clear();
+                }
+            }
+            
+            // Focus na polu hasła
+            document.getElementById('passwordInput').focus();
+        };
+        
+        // Skróty klawiszowe
+        document.addEventListener('keydown', function(e) {
+            // Alt + L = Logout
+            if (e.altKey && e.key === 'l') {
+                logout();
+            }
+            // Alt + 1/2/3 = Otwórz model
+            if (e.altKey && e.key === '1') {
+                openModel('pv-model-html.html');
+            }
+            if (e.altKey && e.key === '2') {
+                openModel('bess-model.html');
+            }
+            if (e.altKey && e.key === '3') {
+                openModel('hybrid-model.html');
+            }
+        });
+    </script>
+</body>
+</html>
