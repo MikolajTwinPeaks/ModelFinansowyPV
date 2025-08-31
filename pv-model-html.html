@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Finansowy PV 1MW</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f7f7f7;
+            padding: 30px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        
+        .param-group {
+            margin-bottom: 30px;
+        }
+        
+        .param-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .param-item {
+            margin-bottom: 15px;
+        }
+        
+        .param-item label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .param-item input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .param-item input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .param-item .unit {
+            display: inline-block;
+            margin-left: 5px;
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .kpi-card.negative {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .kpi-card.positive {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .kpi-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .kpi-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .kpi-delta {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th {
+            background: #f7f7f7;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .slider-container {
+            margin: 20px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>☀️ Model Finansowy Farmy Fotowoltaicznej 1 MW</h1>
+            <p>Interaktywna analiza finansowa projektu PV</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="param-group">
+                    <h3>💰 Parametry Finansowe</h3>
+                    <div class="param-item">
+                        <label>Kurs EUR</label>
+                        <input type="number" id="eur_rate" value="4.25" step="0.01" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>WIBOR 3M</label>
+                        <input type="number" id="wibor" value="4.99" step="0.01" onchange="updateCalculations()">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Stopa podatku CIT</label>
+                        <input type="number" id="tax_rate" value="19" step="1" onchange="updateCalculations()">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <h3>⚡ Parametry Techniczne</h3>
+                    <div class="param-item">
+                        <label>Moc instalacji</label>
+                        <input type="number" id="power" value="1.0" step="0.1" onchange="updateCalculations()">
+                        <span class="unit">MW</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Produkcja roczna</label>
+                        <input type="number" id="production" value="5324.58" step="10" onchange="updateCalculations()">
+                        <span class="unit">MWh</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Degradacja roczna</label>
+                        <input type="number" id="degradation" value="0.5" step="0.1" onchange="updateCalculations()">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Cena energii</label>
+                        <input type="number" id="energy_price" value="459.40" step="10" onchange="updateCalculations()">
+                        <span class="unit">PLN/MWh</span>
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <h3>💸 Koszty Operacyjne (miesięczne)</h3>
+                    <div class="param-item">
+                        <label>Serwis instalacji</label>
+                        <input type="number" id="service_cost" value="1150.49" step="10" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Dzierżawa</label>
+                        <input type="number" id="lease_cost" value="750" step="10" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Zarządzanie</label>
+                        <input type="number" id="management_cost" value="3000" step="10" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Ochrona</label>
+                        <input type="number" id="security_cost" value="872" step="10" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <h3>🏗️ Inwestycja i Finansowanie</h3>
+                    <div class="param-item">
+                        <label>CAPEX</label>
+                        <input type="number" id="capex" value="1800000" step="10000" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Kapitał własny</label>
+                        <input type="number" id="equity" value="970000" step="10000" onchange="updateCalculations()">
+                        <span class="unit">PLN</span>
+                    </div>
+                    <div class="param-item">
+                        <label>Oprocentowanie kredytu</label>
+                        <input type="number" id="interest_rate" value="7.2" step="0.1" onchange="updateCalculations()">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div class="kpi-grid">
+                    <div class="kpi-card" id="npv-card">
+                        <div class="kpi-label">NPV</div>
+                        <div class="kpi-value" id="npv-value">-531 PLN</div>
+                        <div class="kpi-delta" id="npv-status">Projekt nierentowny</div>
+                    </div>
+                    <div class="kpi-card" id="irr-card">
+                        <div class="kpi-label">IRR</div>
+                        <div class="kpi-value" id="irr-value">4.0%</div>
+                        <div class="kpi-delta" id="irr-delta">-3.0pp vs WACC</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">WACC</div>
+                        <div class="kpi-value" id="wacc-value">7.0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Okres zwrotu</div>
+                        <div class="kpi-value" id="payback-value">16.8 lat</div>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+                    <button class="tab" onclick="switchTab('cashflow')">📈 Cash Flow</button>
+                    <button class="tab" onclick="switchTab('sensitivity')">🎯 Wrażliwość</button>
+                    <button class="tab" onclick="switchTab('table')">📋 Tabela</button>
+                </div>
+                
+                <div id="dashboard" class="tab-content active">
+                    <div class="chart-container">
+                        <div id="cashFlowChart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <div id="financingChart"></div>
+                    </div>
+                </div>
+                
+                <div id="cashflow" class="tab-content">
+                    <div class="chart-container">
+                        <div id="detailedCashFlowChart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <div id="cumulativeCashFlowChart"></div>
+                    </div>
+                </div>
+                
+                <div id="sensitivity" class="tab-content">
+                    <div class="slider-container">
+                        <label>Zmiana ceny energii: <span class="slider-value" id="price-change">0%</span></label>
+                        <input type="range" class="slider" id="price-slider" min="-50" max="50" value="0" onchange="updateSensitivity()">
+                    </div>
+                    <div class="chart-container">
+                        <div id="sensitivityChart"></div>
+                    </div>
+                </div>
+                
+                <div id="table" class="tab-content">
+                    <table class="data-table" id="projectionTable">
+                        <thead>
+                            <tr>
+                                <th>Rok</th>
+                                <th>Produkcja (MWh)</th>
+                                <th>Przychody (PLN)</th>
+                                <th>Koszty (PLN)</th>
+                                <th>Cash Flow (PLN)</th>
+                                <th>CF Skumulowany (PLN)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                    </table>
+                    <button class="btn" onclick="exportToCSV()">📥 Eksportuj do CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Model finansowy
+        class PVFinancialModel {
+            constructor() {
+                this.updateParameters();
+            }
+            
+            updateParameters() {
+                this.params = {
+                    eur_rate: parseFloat(document.getElementById('eur_rate').value),
+                    wibor: parseFloat(document.getElementById('wibor').value),
+                    tax_rate: parseFloat(document.getElementById('tax_rate').value),
+                    power: parseFloat(document.getElementById('power').value),
+                    production: parseFloat(document.getElementById('production').value),
+                    degradation: parseFloat(document.getElementById('degradation').value),
+                    energy_price: parseFloat(document.getElementById('energy_price').value),
+                    service_cost: parseFloat(document.getElementById('service_cost').value),
+                    lease_cost: parseFloat(document.getElementById('lease_cost').value),
+                    management_cost: parseFloat(document.getElementById('management_cost').value),
+                    security_cost: parseFloat(document.getElementById('security_cost').value),
+                    capex: parseFloat(document.getElementById('capex').value),
+                    equity: parseFloat(document.getElementById('equity').value),
+                    interest_rate: parseFloat(document.getElementById('interest_rate').value)
+                };
+                this.params.debt = this.params.capex - this.params.equity;
+            }
+            
+            calculateCashFlows(years = 30) {
+                let cashFlows = [];
+                
+                for (let year = 0; year < years; year++) {
+                    // Degradacja
+                    let degradationFactor = Math.pow(1 - this.params.degradation / 100, year);
+                    
+                    // Produkcja
+                    let production = this.params.production * degradationFactor;
+                    if (year === 0) {
+                        production *= 9/12; // Pierwsze 3 miesiące to budowa
+                    }
+                    
+                    // Przychody
+                    let revenue = production * this.params.energy_price;
+                    
+                    // Koszty miesięczne
+                    let monthlyCosts = this.params.service_cost + this.params.lease_cost + 
+                                      this.params.management_cost + this.params.security_cost;
+                    let annualCosts = monthlyCosts * 12;
+                    
+                    // Podatek od nieruchomości (2% od CAPEX)
+                    let propertyTax = this.params.capex * 0.02;
+                    
+                    // Całkowite koszty
+                    let totalCosts = annualCosts + propertyTax;
+                    
+                    // EBITDA
+                    let ebitda = revenue - totalCosts;
+                    
+                    // Amortyzacja (25 lat)
+                    let depreciation = year < 25 ? this.params.capex / 25 : 0;
+                    
+                    // EBIT
+                    let ebit = ebitda - depreciation;
+                    
+                    // Podatek
+                    let tax = Math.max(0, ebit * this.params.tax_rate / 100);
+                    
+                    // Cash Flow
+                    let cf = ebit - tax + depreciation;
+                    
+                    cashFlows.push({
+                        year: year + 1,
+                        production: production,
+                        revenue: revenue,
+                        costs: totalCosts,
+                        cashFlow: cf
+                    });
+                }
+                
+                return cashFlows;
+            }
+            
+            calculateNPV(cashFlows, wacc) {
+                let npv = -this.params.capex;
+                cashFlows.forEach((cf, i) => {
+                    npv += cf.cashFlow / Math.pow(1 + wacc / 100, i + 1);
+                });
+                return npv;
+            }
+            
+            calculateIRR(cashFlows) {
+                let flows = [-this.params.capex];
+                cashFlows.forEach(cf => flows.push(cf.cashFlow));
+                
+                // Newton-Raphson method
+                let rate = 0.1;
+                let tolerance = 0.00001;
+                let maxIterations = 100;
+                
+                for (let i = 0; i < maxIterations; i++) {
+                    let npv = 0;
+                    let dnpv = 0;
+                    
+                    for (let j = 0; j < flows.length; j++) {
+                        npv += flows[j] / Math.pow(1 + rate, j);
+                        dnpv -= j * flows[j] / Math.pow(1 + rate, j + 1);
+                    }
+                    
+                    let newRate = rate - npv / dnpv;
+                    
+                    if (Math.abs(newRate - rate) < tolerance) {
+                        return newRate * 100;
+                    }
+                    
+                    rate = newRate;
+                }
+                
+                return NaN;
+            }
+            
+            calculateWACC() {
+                let totalCapital = this.params.equity + this.params.debt;
+                let equityWeight = this.params.equity / totalCapital;
+                let debtWeight = this.params.debt / totalCapital;
+                
+                // Cost of equity (simplified)
+                let riskFreeRate = 5.24;
+                let marketPremium = 1.24;
+                let beta = 0.88;
+                let specificRisk = 2.0;
+                
+                let costOfEquity = riskFreeRate + beta * marketPremium + specificRisk;
+                
+                // After-tax cost of debt
+                let afterTaxCostOfDebt = this.params.interest_rate * (1 - this.params.tax_rate / 100);
+                
+                // WACC
+                return equityWeight * costOfEquity + debtWeight * afterTaxCostOfDebt;
+            }
+            
+            calculatePayback(cashFlows) {
+                let cumulative = 0;
+                for (let i = 0; i < cashFlows.length; i++) {
+                    cumulative += cashFlows[i].cashFlow;
+                    if (cumulative >= this.params.capex) {
+                        return i + 1;
+                    }
+                }
+                return null;
+            }
+        }
+        
+        // Inicjalizacja modelu
+        const model = new PVFinancialModel();
+        
+        // Funkcje aktualizacji
+        function updateCalculations() {
+            model.updateParameters();
+            
+            let cashFlows = model.calculateCashFlows();
+            let wacc = model.calculateWACC();
+            let npv = model.calculateNPV(cashFlows, wacc);
+            let irr = model.calculateIRR(cashFlows);
+            let payback = model.calculatePayback(cashFlows);
+            
+            // Aktualizacja KPI
+            document.getElementById('npv-value').textContent = formatNumber(npv) + ' PLN';
+            document.getElementById('irr-value').textContent = irr.toFixed(1) + '%';
+            document.getElementById('wacc-value').textContent = wacc.toFixed(1) + '%';
+            document.getElementById('payback-value').textContent = payback ? payback + ' lat' : '> 30 lat';
+            
+            // Status NPV
+            let npvCard = document.getElementById('npv-card');
+            let npvStatus = document.getElementById('npv-status');
+            if (npv > 0) {
+                npvCard.className = 'kpi-card positive';
+                npvStatus.textContent = 'Projekt rentowny';
+            } else {
+                npvCard.className = 'kpi-card negative';
+                npvStatus.textContent = 'Projekt nierentowny';
+            }
+            
+            // IRR vs WACC
+            let irrCard = document.getElementById('irr-card');
+            let irrDelta = document.getElementById('irr-delta');
+            let deltaValue = irr - wacc;
+            irrDelta.textContent = (deltaValue >= 0 ? '+' : '') + deltaValue.toFixed(1) + 'pp vs WACC';
+            irrCard.className = deltaValue >= 0 ? 'kpi-card positive' : 'kpi-card negative';
+            
+            // Aktualizacja wykresów
+            updateCharts(cashFlows);
+            updateTable(cashFlows);
+        }
+        
+        function updateCharts(cashFlows) {
+            // Cash Flow Chart
+            let years = cashFlows.map(cf => cf.year);
+            let cfValues = cashFlows.map(cf => cf.cashFlow);
+            let cumulative = [];
+            let sum = 0;
+            cfValues.forEach(cf => {
+                sum += cf;
+                cumulative.push(sum);
+            });
+            
+            // Wykres Cash Flow
+            let cfTrace = {
+                x: years,
+                y: cfValues,
+                type: 'bar',
+                name: 'Cash Flow',
+                marker: {
+                    color: cfValues.map(v => v > 0 ? '#4facfe' : '#f5576c')
+                }
+            };
+            
+            let cumTrace = {
+                x: years,
+                y: cumulative,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'CF Skumulowany',
+                yaxis: 'y2',
+                line: { color: '#667eea', width: 2 }
+            };
+            
+            let cfLayout = {
+                title: 'Przepływy Pieniężne',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'Cash Flow (PLN)' },
+                yaxis2: {
+                    title: 'CF Skumulowany (PLN)',
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                hovermode: 'x unified',
+                shapes: [{
+                    type: 'line',
+                    x0: 0,
+                    y0: model.params.capex,
+                    x1: 30,
+                    y1: model.params.capex,
+                    yref: 'y2',
+                    line: {
+                        color: 'rgba(255, 0, 0, 0.5)',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            };
+            
+            Plotly.newPlot('cashFlowChart', [cfTrace, cumTrace], cfLayout);
+            
+            // Financing Structure
+            let financingData = [{
+                values: [model.params.equity, model.params.debt],
+                labels: ['Kapitał własny', 'Dług'],
+                type: 'pie',
+                hole: 0.4,
+                marker: {
+                    colors: ['#4facfe', '#f5576c']
+                }
+            }];
+            
+            let financingLayout = {
+                title: 'Struktura Finansowania',
+                height: 400
+            };
+            
+            Plotly.newPlot('financingChart', financingData, financingLayout);
+            
+            // Detailed Cash Flow
+            let revenues = cashFlows.map(cf => cf.revenue);
+            let costs = cashFlows.map(cf => -cf.costs);
+            
+            let revenueTrace = {
+                x: years,
+                y: revenues,
+                type: 'bar',
+                name: 'Przychody',
+                marker: { color: '#4facfe' }
+            };
+            
+            let costTrace = {
+                x: years,
+                y: costs,
+                type: 'bar',
+                name: 'Koszty',
+                marker: { color: '#f5576c' }
+            };
+            
+            Plotly.newPlot('detailedCashFlowChart', [revenueTrace, costTrace], {
+                title: 'Przychody vs Koszty',
+                barmode: 'relative',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'PLN' }
+            });
+            
+            // Cumulative Cash Flow
+            Plotly.newPlot('cumulativeCashFlowChart', [{
+                x: years,
+                y: cumulative,
+                type: 'scatter',
+                mode: 'lines+markers',
+                fill: 'tozeroy',
+                line: { color: '#667eea', width: 3 }
+            }], {
+                title: 'Skumulowany Cash Flow',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'PLN' }
+            });
+        }
+        
+        function updateTable(cashFlows) {
+            let tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            let cumulative = 0;
+            cashFlows.slice(0, 10).forEach(cf => {
+                cumulative += cf.cashFlow;
+                let row = tbody.insertRow();
+                row.insertCell(0).textContent = cf.year;
+                row.insertCell(1).textContent = formatNumber(cf.production);
+                row.insertCell(2).textContent = formatNumber(cf.revenue);
+                row.insertCell(3).textContent = formatNumber(cf.costs);
+                row.insertCell(4).textContent = formatNumber(cf.cashFlow);
+                row.insertCell(5).textContent = formatNumber(cumulative);
+                
+                if (cf.cashFlow < 0) {
+                    row.cells[4].style.color = '#f5576c';
+                } else {
+                    row.cells[4].style.color = '#4facfe';
+                }
+            });
+        }
+        
+        function updateSensitivity() {
+            let slider = document.getElementById('price-slider');
+            let change = parseFloat(slider.value);
+            document.getElementById('price-change').textContent = change + '%';
+            
+            let basePrice = 459.40;
+            let variations = [];
+            let npvResults = [];
+            
+            for (let i = -50; i <= 50; i += 10) {
+                variations.push(basePrice * (1 + i / 100));
+                
+                // Temporarily change price
+                let originalPrice = model.params.energy_price;
+                model.params.energy_price = basePrice * (1 + i / 100);
+                
+                let cashFlows = model.calculateCashFlows();
+                let wacc = model.calculateWACC();
+                let npv = model.calculateNPV(cashFlows, wacc);
+                
+                npvResults.push(npv);
+                
+                // Restore original price
+                model.params.energy_price = originalPrice;
+            }
+            
+            let trace = {
+                x: variations,
+                y: npvResults,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#667eea', width: 3 }
+            };
+            
+            let layout = {
+                title: 'Wrażliwość NPV na cenę energii',
+                xaxis: { title: 'Cena energii (PLN/MWh)' },
+                yaxis: { title: 'NPV (PLN)' },
+                shapes: [{
+                    type: 'line',
+                    x0: 0,
+                    y0: 0,
+                    x1: 1000,
+                    y1: 0,
+                    line: {
+                        color: 'rgba(255, 0, 0, 0.5)',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            };
+            
+            Plotly.newPlot('sensitivityChart', [trace], layout);
+        }
+        
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all tab buttons
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Mark button as active
+            event.target.classList.add('active');
+            
+            // Update sensitivity chart if needed
+            if (tabName === 'sensitivity') {
+                updateSensitivity();
+            }
+        }
+        
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString('pl-PL');
+        }
+        
+        function exportToCSV() {
+            let cashFlows = model.calculateCashFlows();
+            let csv = 'Rok,Produkcja (MWh),Przychody (PLN),Koszty (PLN),Cash Flow (PLN)\n';
+            
+            cashFlows.forEach(cf => {
+                csv += `${cf.year},${cf.production},${cf.revenue},${cf.costs},${cf.cashFlow}\n`;
+            });
+            
+            let blob = new Blob([csv], { type: 'text/csv' });
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'model_pv_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+        }
+        
+        // Inicjalizacja przy załadowaniu
+        window.onload = function() {
+            updateCalculations();
+        };
+    </script>
+</body>
+</html>
