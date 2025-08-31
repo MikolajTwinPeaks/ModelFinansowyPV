@@ -440,22 +440,9 @@
 </head>
 <body>
     <button class="back-to-panel-btn" onclick="backToPanel()">← Powrót do panelu</button>
-    <!-- Login Screen -->
-    <div class="login-container" id="loginContainer">
-        <h1>☀️🔋 Model Hybrydowy</h1>
-        <p class="subtitle">PV + BESS - Analiza Synergii</p>
-        <div class="login-form">
-            <input type="password" 
-                   class="login-input" 
-                   id="passwordInput" 
-                   placeholder="Wprowadź hasło administratora"
-                   onkeypress="if(event.key==='Enter') login()">
-            <button class="login-btn" onclick="login()">🔐 Zaloguj</button>
-            <div class="login-error" id="loginError">❌ Nieprawidłowe hasło</div>
-            <div class="login-hint">💡 Wskazówka: Domyślne hasło to 'admin'</div>
-        </div>
-    </div>
-
+    
+    
+    
     <!-- Main App -->
     <div class="app-container" id="appContainer">
         <div class="container">
@@ -720,7 +707,7 @@
             
             if (hashedPassword === ADMIN_PASSWORD_HASH) {
                 sessionStorage.setItem('hybrid_logged_in', 'true');
-                document.getElementById('loginContainer').style.display = 'none';
+                // document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 updateCalculations();
             } else {
@@ -730,8 +717,8 @@
         }
         
         function logout() {
-            sessionStorage.removeItem('hybrid_logged_in');
-            location.reload();
+            sessionStorage.clear();
+            window.location.href = 'index.html';
         }
         
         // Model Hybrydowy PV+BESS
@@ -1438,13 +1425,32 @@
             doc.save('raport_hybrydowy_' + new Date().toISOString().slice(0, 10) + '.pdf');
         }
         
-        // Sprawdź sesję przy załadowaniu
+        
         window.onload = function() {
-            if (sessionStorage.getItem('hybrid_logged_in') === 'true') {
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                updateCalculations();
+            // Sprawdź autoryzacje z głównego panelu
+            if (sessionStorage.getItem('energy_models_auth') !== 'true') {
+                alert ('Musisz się zalogować przez panel główny.');
+                window.location.href = 'index.html';
+                return
             }
+            // Sprawdź czy sesja nie wygasła (24h)
+            const authTime = parseInt(sessionStorage.getItem('auth_timestam'));
+            const now = Date.now();
+            const hoursPassed = (now - authTime) / (1000 * 60 * 60);
+
+            if (hoursPassed > 24) {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+                return
+            }
+
+            // Pokaz aplikacje od razy (bez ekranu logowania)
+            document.getElementById('appContainer').style.display = 'block';
+
+            // Uruchom obliczenia
+            updateCalculations();
+            
         };
 
         function backToPanel() {

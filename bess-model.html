@@ -447,21 +447,7 @@
 </head>
 <body>
     <button class="back-to-panel-btn" onclick="backToPanel()">← Powrót do panelu</button>
-    <!-- Login Screen -->
-    <div class="login-container" id="loginContainer">
-        <h1>🔋 Model Finansowy BESS</h1>
-        <p class="subtitle">System Magazynowania Energii</p>
-        <div class="login-form">
-            <input type="password" 
-                   class="login-input" 
-                   id="passwordInput" 
-                   placeholder="Wprowadź hasło administratora"
-                   onkeypress="if(event.key==='Enter') login()">
-            <button class="login-btn" onclick="login()">🔐 Zaloguj</button>
-            <div class="login-error" id="loginError">❌ Nieprawidłowe hasło</div>
-            <div class="login-hint">💡 Wskazówka: Domyślne hasło to 'admin'</div>
-        </div>
-    </div>
+    
 
     <!-- Main App -->
     <div class="app-container" id="appContainer">
@@ -709,7 +695,7 @@
                 sessionStorage.setItem('bess_logged_in', 'true');
                 
                 // Pokaż aplikację
-                document.getElementById('loginContainer').style.display = 'none';
+                
                 document.getElementById('appContainer').style.display = 'block';
                 
                 // Inicjalizuj kalkulacje
@@ -727,12 +713,29 @@
         
         // Sprawdź sesję przy załadowaniu
         window.onload = function() {
-            if (sessionStorage.getItem('bess_logged_in') === 'true') {
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                updateCalculations();
+            if (sessionStorage.getItem('energy_models_auth') !== 'true') {
+                alert('Musisz się zalogować przez panel główny.');
+                window.location.href = 'index.html';
+                return;
             }
-        };
+        
+
+            const authTime = parseInt(sessionStorage.getItem('auth_timestamp'));
+            const now = Date.now();
+            const hoursPassed = (now - authTime) / (1000 * 60 * 60);
+
+            if (hoursPassed > 24) {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+                return;
+            }   
+            
+            document.getElementById('appContainer').style.display = 'block';
+
+            updateCalculations();
+
+        }
         
         // Model finansowy BESS
         class BESSFinancialModel {

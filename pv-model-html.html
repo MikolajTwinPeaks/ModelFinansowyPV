@@ -479,6 +479,31 @@
     </div>
 
     <script>
+
+        // Sprawdzenie autoryzacji przy załadowaniu
+        window.onload = function() {
+            // Sprawdź czy uzytkownik  jest zalogowany
+            if (sessionStorage.getItem("energy_models_auth") !== 'true') {
+                //Przekieruj do strony logowania
+                alert('Musisz się zalogować, aby korzystać z modelu.');
+                window.location.href = 'index.html';
+                return;
+            }
+            //Sprawdź czy sesja nie wygasła (24h)
+            const authTime = parseInt(sessionStorage.getItem('auth_timestand'));
+            const now = Date.now();
+            const hoursPassed = (now - authTime) / (1000 * 60 * 60);
+
+            if (hoursPassed > 24) {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+                return;
+            }
+            //Jeśli wszystko OK, uruchom obliczenia
+            updateCalculations();
+        }
+
         // Model finansowy
         class PVFinancialModel {
             constructor() {
