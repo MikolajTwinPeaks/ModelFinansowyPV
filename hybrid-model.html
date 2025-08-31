@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Finansowy Hybrydowy PV+BESS</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* Login Screen */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .login-container h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .login-container .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .login-form {
+            margin-top: 30px;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-error {
+            color: #f5576c;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .login-hint {
+            color: #888;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        /* Main App Container */
+        .app-container {
+            display: none;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .main-content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f7f7f7;
+            padding: 30px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        
+        .param-group {
+            margin-bottom: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .param-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .param-item {
+            margin-bottom: 15px;
+        }
+        
+        .param-item label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .param-item input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .param-item input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .param-item .unit {
+            display: inline-block;
+            margin-left: 5px;
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .kpi-card.negative {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .kpi-card.positive {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .kpi-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .kpi-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .kpi-delta {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th {
+            background: #f7f7f7;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box h4 {
+            color: #f57c00;
+            margin-bottom: 10px;
+        }
+        
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .success-box h4 {
+            color: #388e3c;
+            margin-bottom: 10px;
+        }
+        
+        .hybrid-flow {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .flow-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .flow-arrow {
+            font-size: 24px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <h1>☀️🔋 Model Hybrydowy</h1>
+        <p class="subtitle">PV + BESS - Analiza Synergii</p>
+        <div class="login-form">
+            <input type="password" 
+                   class="login-input" 
+                   id="passwordInput" 
+                   placeholder="Wprowadź hasło administratora"
+                   onkeypress="if(event.key==='Enter') login()">
+            <button class="login-btn" onclick="login()">🔐 Zaloguj</button>
+            <div class="login-error" id="loginError">❌ Nieprawidłowe hasło</div>
+            <div class="login-hint">💡 Wskazówka: Domyślne hasło to 'admin'</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <div class="container">
+            <div class="header">
+                <h1>☀️🔋 Model Finansowy Hybrydowy PV+BESS</h1>
+                <p>Synergia Fotowoltaiki i Magazynu Energii</p>
+                <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
+            </div>
+            
+            <div class="main-content">
+                <div class="sidebar">
+                    <div class="param-group">
+                        <h3>☀️ Parametry PV</h3>
+                        <div class="param-item">
+                            <label>Moc instalacji PV</label>
+                            <input type="number" id="pv_power" value="1.0" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">MW</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Produkcja roczna PV</label>
+                            <input type="number" id="pv_production" value="5324.58" step="10" onchange="updateCalculations()">
+                            <span class="unit">MWh</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Degradacja PV</label>
+                            <input type="number" id="pv_degradation" value="0.5" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">%/rok</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Cena sprzedaży PV</label>
+                            <input type="number" id="pv_price" value="300" step="10" onchange="updateCalculations()">
+                            <span class="unit">PLN/MWh</span>
+                        </div>
+                    </div>
+                    
+                    <div class="param-group">
+                        <h3>🔋 Parametry BESS</h3>
+                        <div class="param-item">
+                            <label>Moc systemu BESS</label>
+                            <input type="number" id="bess_power" value="1.0" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">MW</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Pojemność magazynu</label>
+                            <input type="number" id="bess_capacity" value="2.0" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">MWh</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Sprawność round-trip</label>
+                            <input type="number" id="bess_efficiency" value="85" step="1" onchange="updateCalculations()">
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Marża arbitrażowa</label>
+                            <input type="number" id="arbitrage_margin" value="200" step="10" onchange="updateCalculations()">
+                            <span class="unit">PLN/MWh</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Dodatkowe cykle z sieci</label>
+                            <input type="number" id="grid_cycles" value="1" step="0.5" onchange="updateCalculations()">
+                            <span class="unit">cykle/dzień</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Degradacja BESS</label>
+                            <input type="number" id="bess_degradation" value="2" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">%/rok</span>
+                        </div>
+                    </div>
+                    
+                    <div class="param-group">
+                        <h3>💰 Parametry Finansowe</h3>
+                        <div class="param-item">
+                            <label>CAPEX PV</label>
+                            <input type="number" id="capex_pv" value="1800000" step="10000" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                        <div class="param-item">
+                            <label>CAPEX BESS</label>
+                            <input type="number" id="capex_bess" value="2000000" step="10000" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Kapitał własny (łącznie)</label>
+                            <input type="number" id="equity" value="2000000" step="10000" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Oprocentowanie kredytu</label>
+                            <input type="number" id="interest_rate" value="7.2" step="0.1" onchange="updateCalculations()">
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Stopa podatku CIT</label>
+                            <input type="number" id="tax_rate" value="19" step="1" onchange="updateCalculations()">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="param-group">
+                        <h3>💸 Koszty Operacyjne (miesięczne)</h3>
+                        <div class="param-item">
+                            <label>O&M PV</label>
+                            <input type="number" id="om_pv" value="2000" step="100" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                        <div class="param-item">
+                            <label>O&M BESS</label>
+                            <input type="number" id="om_bess" value="3000" step="100" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                        <div class="param-item">
+                            <label>Dzierżawa terenu</label>
+                            <input type="number" id="lease_cost" value="1500" step="100" onchange="updateCalculations()">
+                            <span class="unit">PLN</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content">
+                    <div class="kpi-grid">
+                        <div class="kpi-card" id="npv-card">
+                            <div class="kpi-label">NPV Hybrydowy</div>
+                            <div class="kpi-value" id="npv-value">Obliczanie...</div>
+                            <div class="kpi-delta" id="npv-status">Analiza...</div>
+                        </div>
+                        <div class="kpi-card" id="irr-card">
+                            <div class="kpi-label">IRR Hybrydowy</div>
+                            <div class="kpi-value" id="irr-value">Obliczanie...</div>
+                            <div class="kpi-delta" id="irr-delta">vs WACC</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">WACC</div>
+                            <div class="kpi-value" id="wacc-value">Obliczanie...</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Okres zwrotu</div>
+                            <div class="kpi-value" id="payback-value">Obliczanie...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="hybrid-flow">
+                        <div class="flow-item">
+                            <h4>☀️ PV</h4>
+                            <p id="pv-production-info">5,325 MWh/rok</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-item">
+                            <h4>🔋 BESS (1 cykl)</h4>
+                            <p id="bess-pv-info">730 MWh/rok</p>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-item">
+                            <h4>💰 Arbitraż</h4>
+                            <p id="arbitrage-info">146k PLN/rok</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h4>🔄 Przepływy Energii w Systemie Hybrydowym</h4>
+                        <div id="energy-flow-info">
+                            • PV → BESS: <span id="pv-to-bess">730</span> MWh/rok (darmowa energia)<br>
+                            • PV → Sieć: <span id="pv-to-grid">4,594</span> MWh/rok<br>
+                            • Sieć → BESS: <span id="grid-to-bess">730</span> MWh/rok (dodatkowe cykle)<br>
+                            • BESS → Sieć: <span id="bess-to-grid">1,241</span> MWh/rok (po sprawności)
+                        </div>
+                    </div>
+                    
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+                        <button class="tab" onclick="switchTab('cashflow')">📈 Cash Flow</button>
+                        <button class="tab" onclick="switchTab('comparison')">⚖️ Porównanie</button>
+                        <button class="tab" onclick="switchTab('sensitivity')">🎯 Wrażliwość</button>
+                        <button class="tab" onclick="switchTab('table')">📋 Tabela</button>
+                        <button class="tab" onclick="switchTab('pdf')">📄 Eksport</button>
+                    </div>
+                    
+                    <div id="dashboard" class="tab-content active">
+                        <div class="chart-container">
+                            <div id="cashFlowChart"></div>
+                        </div>
+                        <div class="chart-container">
+                            <div id="revenueBreakdownChart"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="cashflow" class="tab-content">
+                        <div class="chart-container">
+                            <div id="detailedCashFlowChart"></div>
+                        </div>
+                        <div class="chart-container">
+                            <div id="cumulativeCashFlowChart"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="comparison" class="tab-content">
+                        <div class="chart-container">
+                            <div id="comparisonChart"></div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Wskaźnik</th>
+                                    <th>Tylko PV</th>
+                                    <th>Tylko BESS</th>
+                                    <th>Hybrydowy</th>
+                                    <th>Synergia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="sensitivity" class="tab-content">
+                        <div class="chart-container">
+                            <div id="sensitivityChart"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="table" class="tab-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rok</th>
+                                    <th>Produkcja PV</th>
+                                    <th>Przychody PV</th>
+                                    <th>Przychody BESS</th>
+                                    <th>Koszty</th>
+                                    <th>Cash Flow</th>
+                                    <th>CF Skumulowany</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                            </tbody>
+                        </table>
+                        <button class="btn" onclick="exportToCSV()">📥 Eksportuj do CSV</button>
+                    </div>
+                    
+                    <div id="pdf" class="tab-content">
+                        <div class="info-box">
+                            <h4>📄 Generowanie Raportu PDF</h4>
+                            <p>Raport zawiera pełną analizę systemu hybrydowego PV+BESS</p>
+                        </div>
+                        <button class="btn" onclick="generatePDF()">📄 Generuj PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // System logowania
+        const ADMIN_PASSWORD_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // SHA256 dla 'admin'
+        
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+        
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            const hashedPassword = hashPassword(password);
+            
+            if (hashedPassword === ADMIN_PASSWORD_HASH) {
+                sessionStorage.setItem('hybrid_logged_in', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                updateCalculations();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+        
+        function logout() {
+            sessionStorage.removeItem('hybrid_logged_in');
+            location.reload();
+        }
+        
+        // Model Hybrydowy PV+BESS
+        class HybridModel {
+            constructor() {
+                this.updateParameters();
+            }
+            
+            updateParameters() {
+                this.params = {
+                    // PV
+                    pv_power: parseFloat(document.getElementById('pv_power').value),
+                    pv_production: parseFloat(document.getElementById('pv_production').value),
+                    pv_degradation: parseFloat(document.getElementById('pv_degradation').value),
+                    pv_price: parseFloat(document.getElementById('pv_price').value),
+                    
+                    // BESS
+                    bess_power: parseFloat(document.getElementById('bess_power').value),
+                    bess_capacity: parseFloat(document.getElementById('bess_capacity').value),
+                    bess_efficiency: parseFloat(document.getElementById('bess_efficiency').value),
+                    arbitrage_margin: parseFloat(document.getElementById('arbitrage_margin').value),
+                    grid_cycles: parseFloat(document.getElementById('grid_cycles').value),
+                    bess_degradation: parseFloat(document.getElementById('bess_degradation').value),
+                    
+                    // Finansowe
+                    capex_pv: parseFloat(document.getElementById('capex_pv').value),
+                    capex_bess: parseFloat(document.getElementById('capex_bess').value),
+                    equity: parseFloat(document.getElementById('equity').value),
+                    interest_rate: parseFloat(document.getElementById('interest_rate').value),
+                    tax_rate: parseFloat(document.getElementById('tax_rate').value),
+                    
+                    // O&M
+                    om_pv: parseFloat(document.getElementById('om_pv').value),
+                    om_bess: parseFloat(document.getElementById('om_bess').value),
+                    lease_cost: parseFloat(document.getElementById('lease_cost').value)
+                };
+                
+                // Obliczenia pochodne
+                this.params.capex_total = this.params.capex_pv + this.params.capex_bess;
+                this.params.debt = this.params.capex_total - this.params.equity;
+            }
+            
+            calculateCashFlows(years = 30) {
+                let cashFlows = [];
+                
+                for (let year = 0; year < years; year++) {
+                    // DEGRADACJA
+                    let pv_degradation_factor = Math.pow(1 - this.params.pv_degradation / 100, year);
+                    let bess_degradation_factor = Math.pow(1 - this.params.bess_degradation / 100, year);
+                    
+                    // PRODUKCJA PV
+                    let pv_production = this.params.pv_production * pv_degradation_factor;
+                    if (year === 0) {
+                        pv_production *= 9/12; // Pierwsze 3 miesiące to budowa
+                    }
+                    
+                    // ENERGIA Z PV DO BESS (1 cykl dziennie)
+                    let daily_bess_from_pv = Math.min(
+                        this.params.bess_capacity * bess_degradation_factor,
+                        pv_production / 365
+                    );
+                    let annual_bess_from_pv = daily_bess_from_pv * 365;
+                    
+                    // Sprawdzenie - nie więcej niż produkcja PV
+                    annual_bess_from_pv = Math.min(annual_bess_from_pv, pv_production);
+                    
+                    // ENERGIA Z PV DO SIECI (reszta)
+                    let pv_to_grid = pv_production - annual_bess_from_pv;
+                    
+                    // ENERGIA Z SIECI DO BESS (dodatkowe cykle)
+                    let annual_bess_from_grid = this.params.bess_capacity * 
+                                                this.params.grid_cycles * 
+                                                365 * 
+                                                bess_degradation_factor;
+                    
+                    // PRZYCHODY PV
+                    let revenue_pv = pv_to_grid * this.params.pv_price;
+                    
+                    // PRZYCHODY BESS
+                    // Z PV (darmowa energia, pełna marża)
+                    let revenue_bess_from_pv = annual_bess_from_pv * 
+                                               (this.params.bess_efficiency / 100) * 
+                                               (this.params.pv_price + this.params.arbitrage_margin);
+                    
+                    // Z sieci (tylko marża arbitrażowa)
+                    let revenue_bess_from_grid = annual_bess_from_grid * 
+                                                 (this.params.bess_efficiency / 100) * 
+                                                 this.params.arbitrage_margin;
+                    
+                    let revenue_bess = revenue_bess_from_pv + revenue_bess_from_grid;
+                    
+                    // CAŁKOWITE PRZYCHODY
+                    let total_revenue = revenue_pv + revenue_bess;
+                    
+                    // KOSZTY OPERACYJNE
+                    let opex = (this.params.om_pv + this.params.om_bess + this.params.lease_cost) * 12;
+                    
+                    // Podatek od nieruchomości (2% od CAPEX)
+                    let property_tax = this.params.capex_total * 0.02;
+                    
+                    // Całkowite koszty
+                    let total_costs = opex + property_tax;
+                    
+                    // EBITDA
+                    let ebitda = total_revenue - total_costs;
+                    
+                    // AMORTYZACJA
+                    // PV - 25 lat, BESS - 15 lat
+                    let depreciation_pv = year < 25 ? this.params.capex_pv / 25 : 0;
+                    let depreciation_bess = year < 15 ? this.params.capex_bess / 15 : 0;
+                    let depreciation = depreciation_pv + depreciation_bess;
+                    
+                    // EBIT
+                    let ebit = ebitda - depreciation;
+                    
+                    // Podatek
+                    let tax = Math.max(0, ebit * this.params.tax_rate / 100);
+                    
+                    // Cash Flow
+                    let cf = ebit - tax + depreciation;
+                    
+                    cashFlows.push({
+                        year: year + 1,
+                        pv_production: pv_production,
+                        pv_to_grid: pv_to_grid,
+                        pv_to_bess: annual_bess_from_pv,
+                        grid_to_bess: annual_bess_from_grid,
+                        revenue_pv: revenue_pv,
+                        revenue_bess: revenue_bess,
+                        total_revenue: total_revenue,
+                        costs: total_costs,
+                        cashFlow: cf
+                    });
+                }
+                
+                return cashFlows;
+            }
+            
+            // Obliczenia dla samodzielnego PV
+            calculateStandalonePV(years = 30) {
+                let cashFlows = [];
+                
+                for (let year = 0; year < years; year++) {
+                    let degradation_factor = Math.pow(1 - this.params.pv_degradation / 100, year);
+                    let production = this.params.pv_production * degradation_factor;
+                    if (year === 0) production *= 9/12;
+                    
+                    let revenue = production * this.params.pv_price;
+                    let opex = (this.params.om_pv + this.params.lease_cost * 0.5) * 12;
+                    let property_tax = this.params.capex_pv * 0.02;
+                    let costs = opex + property_tax;
+                    
+                    let ebitda = revenue - costs;
+                    let depreciation = year < 25 ? this.params.capex_pv / 25 : 0;
+                    let ebit = ebitda - depreciation;
+                    let tax = Math.max(0, ebit * this.params.tax_rate / 100);
+                    let cf = ebit - tax + depreciation;
+                    
+                    cashFlows.push(cf);
+                }
+                
+                return cashFlows;
+            }
+            
+            // Obliczenia dla samodzielnego BESS
+            calculateStandaloneBESS(years = 30) {
+                let cashFlows = [];
+                
+                for (let year = 0; year < years; year++) {
+                    let degradation_factor = Math.pow(1 - this.params.bess_degradation / 100, year);
+                    
+                    // BESS sam musi kupować całą energię z sieci
+                    let annual_cycles = (1 + this.params.grid_cycles) * 365;
+                    let energy_throughput = this.params.bess_capacity * annual_cycles * degradation_factor;
+                    
+                    // Przychód tylko z marży (musi zapłacić za energię)
+                    let revenue = energy_throughput * (this.params.bess_efficiency / 100) * this.params.arbitrage_margin;
+                    
+                    let opex = (this.params.om_bess + this.params.lease_cost * 0.5) * 12;
+                    let property_tax = this.params.capex_bess * 0.02;
+                    let costs = opex + property_tax;
+                    
+                    let ebitda = revenue - costs;
+                    let depreciation = year < 15 ? this.params.capex_bess / 15 : 0;
+                    let ebit = ebitda - depreciation;
+                    let tax = Math.max(0, ebit * this.params.tax_rate / 100);
+                    let cf = ebit - tax + depreciation;
+                    
+                    cashFlows.push(cf);
+                }
+                
+                return cashFlows;
+            }
+            
+            calculateNPV(cashFlows, wacc, capex) {
+                let npv = -capex;
+                cashFlows.forEach((cf, i) => {
+                    let cfValue = typeof cf === 'object' ? cf.cashFlow : cf;
+                    npv += cfValue / Math.pow(1 + wacc / 100, i + 1);
+                });
+                return npv;
+            }
+            
+            calculateIRR(cashFlows, capex) {
+                let flows = [-capex];
+                cashFlows.forEach(cf => {
+                    let cfValue = typeof cf === 'object' ? cf.cashFlow : cf;
+                    flows.push(cfValue);
+                });
+                
+                // Newton-Raphson
+                let rate = 0.1;
+                let tolerance = 0.00001;
+                let maxIterations = 100;
+                
+                for (let i = 0; i < maxIterations; i++) {
+                    let npv = 0;
+                    let dnpv = 0;
+                    
+                    for (let j = 0; j < flows.length; j++) {
+                        npv += flows[j] / Math.pow(1 + rate, j);
+                        dnpv -= j * flows[j] / Math.pow(1 + rate, j + 1);
+                    }
+                    
+                    let newRate = rate - npv / dnpv;
+                    
+                    if (Math.abs(newRate - rate) < tolerance) {
+                        return newRate * 100;
+                    }
+                    
+                    rate = newRate;
+                }
+                
+                return NaN;
+            }
+            
+            calculateWACC() {
+                let totalCapital = this.params.equity + this.params.debt;
+                let equityWeight = this.params.equity / totalCapital;
+                let debtWeight = this.params.debt / totalCapital;
+                
+                // Hybrydowy - średnie ryzyko
+                let riskFreeRate = 5.24;
+                let marketPremium = 1.24;
+                let beta = 1.0; // Średnie między PV (0.88) a BESS (1.2)
+                let specificRisk = 2.5; // Średnie między PV (2.0) a BESS (3.0)
+                
+                let costOfEquity = riskFreeRate + beta * marketPremium + specificRisk;
+                let afterTaxCostOfDebt = this.params.interest_rate * (1 - this.params.tax_rate / 100);
+                
+                return equityWeight * costOfEquity + debtWeight * afterTaxCostOfDebt;
+            }
+            
+            calculatePayback(cashFlows, capex) {
+                let cumulative = 0;
+                for (let i = 0; i < cashFlows.length; i++) {
+                    let cfValue = typeof cashFlows[i] === 'object' ? cashFlows[i].cashFlow : cashFlows[i];
+                    cumulative += cfValue;
+                    if (cumulative >= capex) {
+                        return i + 1;
+                    }
+                }
+                return null;
+            }
+        }
+        
+        // Inicjalizacja
+        const model = new HybridModel();
+        
+        // Funkcje aktualizacji
+        function updateCalculations() {
+            model.updateParameters();
+            
+            // Obliczenia dla hybrydy
+            let hybridCashFlows = model.calculateCashFlows();
+            let wacc = model.calculateWACC();
+            let npvHybrid = model.calculateNPV(hybridCashFlows, wacc, model.params.capex_total);
+            let irrHybrid = model.calculateIRR(hybridCashFlows, model.params.capex_total);
+            let paybackHybrid = model.calculatePayback(hybridCashFlows, model.params.capex_total);
+            
+            // Obliczenia dla samodzielnych
+            let pvCashFlows = model.calculateStandalonePV();
+            let bessCashFlows = model.calculateStandaloneBESS();
+            let npvPV = model.calculateNPV(pvCashFlows, wacc, model.params.capex_pv);
+            let npvBESS = model.calculateNPV(bessCashFlows, wacc, model.params.capex_bess);
+            
+            // Synergia
+            let synergia = npvHybrid - (npvPV + npvBESS);
+            
+            // Aktualizacja KPI
+            document.getElementById('npv-value').textContent = formatNumber(npvHybrid) + ' PLN';
+            document.getElementById('irr-value').textContent = irrHybrid.toFixed(1) + '%';
+            document.getElementById('wacc-value').textContent = wacc.toFixed(1) + '%';
+            document.getElementById('payback-value').textContent = paybackHybrid ? paybackHybrid + ' lat' : '> 30 lat';
+            
+            // Status NPV
+            let npvCard = document.getElementById('npv-card');
+            let npvStatus = document.getElementById('npv-status');
+            if (npvHybrid > 0) {
+                npvCard.className = 'kpi-card positive';
+                npvStatus.textContent = 'Projekt rentowny | Synergia: ' + formatNumber(synergia) + ' PLN';
+            } else {
+                npvCard.className = 'kpi-card negative';
+                npvStatus.textContent = 'Projekt nierentowny';
+            }
+            
+            // IRR vs WACC
+            let irrCard = document.getElementById('irr-card');
+            let irrDelta = document.getElementById('irr-delta');
+            let deltaValue = irrHybrid - wacc;
+            irrDelta.textContent = (deltaValue >= 0 ? '+' : '') + deltaValue.toFixed(1) + 'pp vs WACC';
+            irrCard.className = deltaValue >= 0 ? 'kpi-card positive' : 'kpi-card negative';
+            
+            // Aktualizacja info o przepływach
+            let firstYearCF = hybridCashFlows[0];
+            document.getElementById('pv-production-info').textContent = formatNumber(firstYearCF.pv_production) + ' MWh/rok';
+            document.getElementById('bess-pv-info').textContent = formatNumber(firstYearCF.pv_to_bess) + ' MWh/rok';
+            document.getElementById('arbitrage-info').textContent = formatNumber(firstYearCF.revenue_bess) + ' PLN/rok';
+            
+            document.getElementById('pv-to-bess').textContent = formatNumber(firstYearCF.pv_to_bess);
+            document.getElementById('pv-to-grid').textContent = formatNumber(firstYearCF.pv_to_grid);
+            document.getElementById('grid-to-bess').textContent = formatNumber(firstYearCF.grid_to_bess);
+            document.getElementById('bess-to-grid').textContent = formatNumber(
+                (firstYearCF.pv_to_bess + firstYearCF.grid_to_bess) * model.params.bess_efficiency / 100
+            );
+            
+            // Aktualizacja wykresów
+            updateCharts(hybridCashFlows, pvCashFlows, bessCashFlows);
+            updateTable(hybridCashFlows);
+            updateComparison(npvPV, npvBESS, npvHybrid, synergia);
+        }
+        
+        function updateCharts(hybridCashFlows, pvCashFlows, bessCashFlows) {
+            // Cash Flow Chart
+            let years = hybridCashFlows.map(cf => cf.year);
+            let cfValues = hybridCashFlows.map(cf => cf.cashFlow);
+            let cumulative = [];
+            let sum = 0;
+            cfValues.forEach(cf => {
+                sum += cf;
+                cumulative.push(sum);
+            });
+            
+            // Wykres Cash Flow
+            let cfTrace = {
+                x: years,
+                y: cfValues,
+                type: 'bar',
+                name: 'Cash Flow Hybrydowy',
+                marker: {
+                    color: cfValues.map(v => v > 0 ? '#4facfe' : '#f5576c')
+                }
+            };
+            
+            let cumTrace = {
+                x: years,
+                y: cumulative,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'CF Skumulowany',
+                yaxis: 'y2',
+                line: { color: '#667eea', width: 2 }
+            };
+            
+            let cfLayout = {
+                title: 'Przepływy Pieniężne Systemu Hybrydowego',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'Cash Flow (PLN)' },
+                yaxis2: {
+                    title: 'CF Skumulowany (PLN)',
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                hovermode: 'x unified',
+                shapes: [{
+                    type: 'line',
+                    x0: 0,
+                    y0: model.params.capex_total,
+                    x1: 30,
+                    y1: model.params.capex_total,
+                    yref: 'y2',
+                    line: {
+                        color: 'rgba(255, 0, 0, 0.5)',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            };
+            
+            Plotly.newPlot('cashFlowChart', [cfTrace, cumTrace], cfLayout);
+            
+            // Revenue Breakdown
+            let revenueData = [{
+                x: years.slice(0, 10),
+                y: hybridCashFlows.slice(0, 10).map(cf => cf.revenue_pv),
+                type: 'bar',
+                name: 'Przychody PV',
+                marker: { color: '#FFD700' }
+            }, {
+                x: years.slice(0, 10),
+                y: hybridCashFlows.slice(0, 10).map(cf => cf.revenue_bess),
+                type: 'bar',
+                name: 'Przychody BESS',
+                marker: { color: '#4169E1' }
+            }];
+            
+            let revenueLayout = {
+                title: 'Struktura Przychodów (10 lat)',
+                barmode: 'stack',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'Przychody (PLN)' }
+            };
+            
+            Plotly.newPlot('revenueBreakdownChart', revenueData, revenueLayout);
+            
+            // Detailed Cash Flow
+            let detailedData = [{
+                x: years,
+                y: hybridCashFlows.map(cf => cf.total_revenue),
+                type: 'bar',
+                name: 'Przychody',
+                marker: { color: '#4facfe' }
+            }, {
+                x: years,
+                y: hybridCashFlows.map(cf => -cf.costs),
+                type: 'bar',
+                name: 'Koszty',
+                marker: { color: '#f5576c' }
+            }];
+            
+            Plotly.newPlot('detailedCashFlowChart', detailedData, {
+                title: 'Przychody vs Koszty',
+                barmode: 'relative',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'PLN' }
+            });
+            
+            // Cumulative
+            Plotly.newPlot('cumulativeCashFlowChart', [{
+                x: years,
+                y: cumulative,
+                type: 'scatter',
+                mode: 'lines+markers',
+                fill: 'tozeroy',
+                line: { color: '#667eea', width: 3 }
+            }], {
+                title: 'Skumulowany Cash Flow',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'PLN' }
+            });
+            
+            // Comparison Chart
+            let comparisonData = [{
+                x: years,
+                y: pvCashFlows,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Tylko PV',
+                line: { color: '#FFD700', width: 2 }
+            }, {
+                x: years,
+                y: bessCashFlows,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Tylko BESS',
+                line: { color: '#4169E1', width: 2 }
+            }, {
+                x: years,
+                y: cfValues,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Hybrydowy',
+                line: { color: '#667eea', width: 3 }
+            }];
+            
+            Plotly.newPlot('comparisonChart', comparisonData, {
+                title: 'Porównanie Cash Flow: PV vs BESS vs Hybrydowy',
+                xaxis: { title: 'Rok' },
+                yaxis: { title: 'Cash Flow (PLN)' }
+            });
+        }
+        
+        function updateTable(cashFlows) {
+            let tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            let cumulative = 0;
+            cashFlows.slice(0, 10).forEach(cf => {
+                cumulative += cf.cashFlow;
+                let row = tbody.insertRow();
+                row.insertCell(0).textContent = cf.year;
+                row.insertCell(1).textContent = formatNumber(cf.pv_production);
+                row.insertCell(2).textContent = formatNumber(cf.revenue_pv);
+                row.insertCell(3).textContent = formatNumber(cf.revenue_bess);
+                row.insertCell(4).textContent = formatNumber(cf.costs);
+                row.insertCell(5).textContent = formatNumber(cf.cashFlow);
+                row.insertCell(6).textContent = formatNumber(cumulative);
+                
+                if (cf.cashFlow < 0) {
+                    row.cells[5].style.color = '#f5576c';
+                } else {
+                    row.cells[5].style.color = '#4facfe';
+                }
+            });
+        }
+        
+        function updateComparison(npvPV, npvBESS, npvHybrid, synergia) {
+            let tbody = document.getElementById('comparisonTableBody');
+            tbody.innerHTML = '';
+            
+            let data = [
+                ['NPV (PLN)', formatNumber(npvPV), formatNumber(npvBESS), formatNumber(npvHybrid), formatNumber(synergia)],
+                ['CAPEX (PLN)', formatNumber(model.params.capex_pv), formatNumber(model.params.capex_bess), formatNumber(model.params.capex_total), '-'],
+                ['Efekt synergii (%)', '-', '-', '-', ((synergia / Math.abs(npvPV + npvBESS)) * 100).toFixed(1) + '%']
+            ];
+            
+            data.forEach(row => {
+                let tr = tbody.insertRow();
+                row.forEach((cell, i) => {
+                    let td = tr.insertCell(i);
+                    td.textContent = cell;
+                    if (i === 4 && row[0] === 'NPV (PLN)' && synergia > 0) {
+                        td.style.color = '#4facfe';
+                        td.style.fontWeight = 'bold';
+                    }
+                });
+            });
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'sensitivity') {
+                updateSensitivity();
+            }
+        }
+        
+        function updateSensitivity() {
+            // Analiza wrażliwości dla kluczowych parametrów
+            let baseParams = {...model.params};
+            let parameters = ['pv_price', 'arbitrage_margin', 'bess_efficiency'];
+            let paramNames = ['Cena PV', 'Marża arbitrażowa', 'Sprawność BESS'];
+            let traces = [];
+            
+            parameters.forEach((param, idx) => {
+                let variations = [];
+                let npvResults = [];
+                
+                for (let i = -30; i <= 30; i += 10) {
+                    model.params = {...baseParams};
+                    model.params[param] = baseParams[param] * (1 + i / 100);
+                    
+                    let cashFlows = model.calculateCashFlows();
+                    let wacc = model.calculateWACC();
+                    let npv = model.calculateNPV(cashFlows, wacc, model.params.capex_total);
+                    
+                    variations.push(i);
+                    npvResults.push(npv);
+                }
+                
+                traces.push({
+                    x: variations,
+                    y: npvResults,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: paramNames[idx]
+                });
+            });
+            
+            model.params = baseParams;
+            
+            Plotly.newPlot('sensitivityChart', traces, {
+                title: 'Analiza Wrażliwości NPV',
+                xaxis: { title: 'Zmiana parametru (%)' },
+                yaxis: { title: 'NPV (PLN)' },
+                shapes: [{
+                    type: 'line',
+                    x0: -30,
+                    y0: 0,
+                    x1: 30,
+                    y1: 0,
+                    line: {
+                        color: 'rgba(255, 0, 0, 0.5)',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            });
+        }
+        
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString('pl-PL');
+        }
+        
+        function exportToCSV() {
+            let cashFlows = model.calculateCashFlows();
+            let csv = 'Rok,Produkcja PV,PV->BESS,PV->Sieć,Sieć->BESS,Przychody PV,Przychody BESS,Koszty,Cash Flow\n';
+            
+            cashFlows.forEach(cf => {
+                csv += `${cf.year},${cf.pv_production},${cf.pv_to_bess},${cf.pv_to_grid},${cf.grid_to_bess},${cf.revenue_pv},${cf.revenue_bess},${cf.costs},${cf.cashFlow}\n`;
+            });
+            
+            let blob = new Blob([csv], { type: 'text/csv' });
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'model_hybrydowy_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+        }
+        
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            let cashFlows = model.calculateCashFlows();
+            let wacc = model.calculateWACC();
+            let npvHybrid = model.calculateNPV(cashFlows, wacc, model.params.capex_total);
+            let irrHybrid = model.calculateIRR(cashFlows, model.params.capex_total);
+            let paybackHybrid = model.calculatePayback(cashFlows, model.params.capex_total);
+            
+            // Obliczenia dla porównania
+            let pvCashFlows = model.calculateStandalonePV();
+            let bessCashFlows = model.calculateStandaloneBESS();
+            let npvPV = model.calculateNPV(pvCashFlows, wacc, model.params.capex_pv);
+            let npvBESS = model.calculateNPV(bessCashFlows, wacc, model.params.capex_bess);
+            let synergia = npvHybrid - (npvPV + npvBESS);
+            
+            // Nagłówek
+            doc.setFontSize(20);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Model Finansowy Hybrydowy PV+BESS', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text('Analiza Synergii Systemów', 105, 28, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text('Raport wygenerowany: ' + new Date().toLocaleString('pl-PL'), 105, 35, { align: 'center' });
+            
+            // Podsumowanie
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text('Podsumowanie Wykonawcze', 20, 50);
+            
+            doc.autoTable({
+                startY: 55,
+                head: [['Wskaźnik', 'Tylko PV', 'Tylko BESS', 'Hybrydowy', 'Synergia']],
+                body: [
+                    ['NPV', formatNumber(npvPV) + ' PLN', formatNumber(npvBESS) + ' PLN', formatNumber(npvHybrid) + ' PLN', formatNumber(synergia) + ' PLN'],
+                    ['IRR', '-', '-', irrHybrid.toFixed(1) + '%', '-'],
+                    ['WACC', wacc.toFixed(1) + '%', wacc.toFixed(1) + '%', wacc.toFixed(1) + '%', '-'],
+                    ['Okres zwrotu', '-', '-', paybackHybrid ? paybackHybrid + ' lat' : '> 30 lat', '-']
+                ],
+                theme: 'striped',
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+            
+            // Kluczowe korzyści
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.text('Kluczowe Korzyści Systemu Hybrydowego', 20, 20);
+            
+            doc.setFontSize(11);
+            let benefits = [
+                '1. Darmowa energia dla BESS (1 cykl dziennie z PV)',
+                '2. Gwarantowany odbiór części produkcji PV',
+                '3. Eliminacja strat na przesyle (self-consumption)',
+                '4. Dywersyfikacja przychodów',
+                '5. Synergia operacyjna: ' + formatNumber(synergia) + ' PLN',
+                '6. Większa stabilność przychodów',
+                '7. Możliwość świadczenia usług systemowych'
+            ];
+            
+            benefits.forEach((benefit, i) => {
+                doc.text(benefit, 25, 35 + (i * 8));
+            });
+            
+            // Przepływy energii
+            doc.setFontSize(14);
+            doc.text('Roczne Przepływy Energii (Rok 1)', 20, 100);
+            
+            let cf1 = cashFlows[0];
+            doc.autoTable({
+                startY: 105,
+                head: [['Przepływ', 'Ilość (MWh)', 'Wartość (PLN)']],
+                body: [
+                    ['PV → BESS', formatNumber(cf1.pv_to_bess), formatNumber(cf1.pv_to_bess * model.params.pv_price)],
+                    ['PV → Sieć', formatNumber(cf1.pv_to_grid), formatNumber(cf1.revenue_pv)],
+                    ['Sieć → BESS', formatNumber(cf1.grid_to_bess), '-'],
+                    ['BESS → Sieć (arbitraż)', formatNumber((cf1.pv_to_bess + cf1.grid_to_bess) * model.params.bess_efficiency / 100), formatNumber(cf1.revenue_bess)]
+                ],
+                theme: 'striped',
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+            
+            doc.save('raport_hybrydowy_' + new Date().toISOString().slice(0, 10) + '.pdf');
+        }
+        
+        // Sprawdź sesję przy załadowaniu
+        window.onload = function() {
+            if (sessionStorage.getItem('hybrid_logged_in') === 'true') {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                updateCalculations();
+            }
+        };
+    </script>
+</body>
+</html>
